@@ -1,0 +1,110 @@
+#!/usr/bin/perl -w
+#
+# NAME:
+# To perform RTM simulations for clear sky conditions on a full day using
+# libRadtran.
+#
+# PURPOSE:
+# NA
+#
+# REQUIREMENTS:
+# NA
+#
+# INPUT:
+# NA
+#
+# OUTPUT:
+# NA
+#
+# NOTES:
+# NA
+#
+# BUGS:
+# NA
+#
+# AUTHOR:
+# Øystein Godøy, METNO/FOU, 16.11.2010 
+#
+# MODIFIED:
+# NA
+#
+# CVS_ID:
+# $Id: rtmrun,v 1.1 2010-11-22 08:39:42 steingod Exp $
+#
+#
+
+use strict;
+use Cwd;
+use Date::Manip;
+
+my $verbose = 0;
+my $outfile = "libradtran_simulation.txt";
+my $tmpfile = "tmpfile.txt";
+my $errfile = "errfile.txt";
+my $srcdir = "/disk1/software/libRadtran-1.4";
+my $uvspec="$srcdir"."/bin/uvspec";
+my $zenith="$srcdir"."/bin/zenith -q -t0";
+my %position = (
+    lat => 56.5,
+    lon => -3.12, # positive westwards for libRadtran
+);
+my %mydate = (
+    year => 2010,
+    month => 6,
+    mday => 23,
+    shour => 0,
+    ehour => 23,
+    step => 1,
+
+);
+my %cfg = (
+atmosphere_file => "$srcdir/data/atmmod/afglss.dat", # Location of atmospheric profile file. 
+solar_file => "$srcdir/data/solar_flux/atlas_plus_modtran", # Location of the extraterrestrial spectrum
+albedo => 0.05, # Surface albedo
+rte_solver => "disort", # Radiative transfer equation solver
+deltam => "on", # delta-M scaling on
+nstr=> 6, # Number of streams
+wavelength => "300.0 3000.0", # Wavelength range [nm]
+correlated_k => "kato2",
+output => "sum",
+output_user => "sza eglo",
+);
+my($myhour, $sza, $tmp, $cfgfile, $key, $value, $cwd, $ssi, $doy);
+
+$doy = Date_DayOfYear($mydate{'month'},$mydate{'mday'},$mydate{'year'});
+
+$cwd = getcwd();
+chdir "$srcdir"."/bin";
+
+open FP1, ">$cwd/$outfile" or die "Can't open $cwd/$outfile";
+
+for ($myhour = $mydate{'shour'}; $myhour <= $mydate{'ehour'}; $myhour++) {
+    $tmp = qx/$zenith -a $position{'lat'} -o $position{'lon'} -y$mydate{'year'} $mydate{'mday'} $mydate{'month'} $myhour 0 0/;
+    $sza = (split / +/,$tmp)[1];
+
+    $cfgfile = "";
+    while (($key, $value) = each %cfg) {
+        $cfgfile .= "$key $value\n";
+    }
+    $cfgfile .= "sza $sza\n";
+    $cfgfile .= "day_of_year $doy\n";
+    $cfgfile .= "quiet\n";
+
+    open FP2, ">$tmpfile.txt" or die "Can't open $tmpfile\n";
+    print FP2 "$cfgfile";
+    close FP2;
+
+    if ($verbose) {
+        $tmp = qx/$uvspec < $tmpfile.txt/;
+    } else {
+        $tmp = qx/$uvspec < $tmpfile.txt 2>$errfile/;
+        unlink "$tmpfile";
+    }
+    $ssi = (split / +/,$tmp)[2];
+
+    printf FP1 "%02d %6.2f %6.2f\n",$myhour,$sza,$ssi;
+};
+close FP1;
+chdir $cwd;
+
+exit;

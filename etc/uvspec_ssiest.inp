@@ -1,0 +1,21 @@
+                         # Location of atmospheric profile file. 
+atmosphere_file ../data/atmmod/afglms.dat
+                         # Location of the extraterrestrial spectrum
+#solar_file ../data/solar_flux/atlas_plus_modtran
+solar_file ../data/solar_flux/kato
+ozone_column  300.       # Scale ozone column to 300.0 DU
+day_of_year 174          # Correct for Earth-Sun distance
+albedo 0.05               # Surface albedo
+sza 33.132                # Solar zenith angle
+rte_solver disort        # Radiative transfer equation solver
+deltam  on               # delta-M scaling on
+nstr  6                  # Number of streams
+wavelength 300.0 3000.0   # Wavelength range [nm]
+#slit_function_file ../examples/TRI_SLIT.DAT
+                         # Location of slit function
+#spline 300 340 1         # Interpolate from first to last in step
+#aerosol_default
+correlated_k KATO
+output sum
+
+quiet
