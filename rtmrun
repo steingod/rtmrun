@@ -36,7 +36,7 @@
 # NA
 #
 # CVS_ID:
-# $Id: rtmrun,v 1.4 2012-09-06 09:26:22 steingod Exp $
+# $Id: rtmrun,v 1.5 2012-09-06 09:27:49 steingod Exp $
 #
 
 use strict;
@@ -178,39 +178,6 @@ foreach $mydate (@mydates) {
 };
 close FP1;
 
-chdir $cwd;
-
-exit; # while testing...
-
-open FP1, ">$cwd/$outfile" or die "Can't open $cwd/$outfile";
-
-for ($myhour = $mydate{'shour'}; $myhour <= $mydate{'ehour'}; $myhour++) {
-    $tmp = qx/$zenith -a $position{'lat'} -o $position{'lon'} -y$mydate{'year'} $mydate{'mday'} $mydate{'month'} $myhour 0 0/;
-    $sza = (split / +/,$tmp)[1];
-
-    $cfgfile = "";
-    while (($key, $value) = each %cfg) {
-        $cfgfile .= "$key $value\n";
-    }
-    $cfgfile .= "sza $sza\n";
-    $cfgfile .= "day_of_year $doy\n";
-    $cfgfile .= "quiet\n";
-
-    open FP2, ">$tmpfile.txt" or die "Can't open $tmpfile\n";
-    print FP2 "$cfgfile";
-    close FP2;
-
-    if ($verbose) {
-        $tmp = qx/$uvspec < $tmpfile.txt/;
-    } else {
-        $tmp = qx/$uvspec < $tmpfile.txt 2>$errfile/;
-        unlink "$tmpfile";
-    }
-    $ssi = (split / +/,$tmp)[2];
-
-    printf FP1 "%02d %6.2f %6.2f\n",$myhour,$sza,$ssi;
-};
-close FP1;
 chdir $cwd;
 
 exit;
