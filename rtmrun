@@ -36,7 +36,7 @@
 # NA
 #
 # CVS_ID:
-# $Id: rtmrun,v 1.6 2012-09-06 09:39:37 steingod Exp $
+# $Id: rtmrun,v 1.7 2012-09-06 15:18:30 steingod Exp $
 #
 
 use strict;
@@ -51,7 +51,7 @@ use vars qw($opt_h $opt_c);
 sub usage;
 sub decode_cfg;
 
-my $verbose = 0;
+my $verbose = 1;
 my(%locations,%uvspeccfg,%position,%myperiod);
 my($mydate);
 my($timecnt,$cfgcnt);
@@ -63,8 +63,7 @@ usage if ($opt_h || !$opt_c);
 my $cfgfile = $opt_c;
 
 # Decode configuration file
-die "Failed to decode configuration file...\n" 
-unless (decode_cfg(\%locations,\%uvspeccfg,\%position,\%myperiod));
+die "Failed to decode configuration file...\n" unless (decode_cfg(\%locations,\%uvspeccfg,\%position,\%myperiod));
 
 print("zenith: $locations{zenith}\n");
 print("uvspec: $locations{uvspec}\n");
@@ -81,7 +80,6 @@ print("startdate: $myperiod{startdate}\n");
 print("enddate: $myperiod{enddate}\n");
 print("timestep: $myperiod{step}\n");
 
-my $doy=0;
 my $mystartdate = ParseDate($myperiod{startdate});
 my $myenddate = ParseDate($myperiod{enddate});
 my $tz = Date_TimeZone;
@@ -92,7 +90,8 @@ my @mydates = ParseRecur($myperiod{step},$mystartdate,$mystartdate,$myenddate);
 
 # Do the estimates...
 $cwd = getcwd();
-chdir "$locations{libradtran}"."/bin";
+print "$locations{libradtran}\n";
+chdir "$locations{libradtran}"."/bin" or die "Could not change directory";
 open FP1, ">$cwd/$locations{outfile}" or die "Can't open $cwd/$locations{outfile}";
 foreach $mydate (@mydates) {
     
@@ -114,6 +113,7 @@ foreach $mydate (@mydates) {
     $cfgcnt .= "solar_file $locations{solar_file}\n";
     while (($key, $value) = each %uvspeccfg) {
         $cfgcnt .= "$key $value\n";
+        #print("$key - $value\n");
     }
     $cfgcnt .= "sza $sza\n";
     $cfgcnt .= "day_of_year $mydoy\n";
@@ -151,10 +151,11 @@ sub usage {
 
 sub decode_cfg {
 
-    my $locationsref = shift @_;
-    my $uvspeccfgref = shift @_;
-    my $posref = shift @_;
-    my $periodref = shift @_;
+    my($locationsref,$uvspeccfgref,$posref,$periodref) = @_;
+#    my $locationsref = shift @_;
+#    my $uvspeccfgref = shift @_;
+#    my $posref = shift @_;
+#    my $periodref = shift @_;
 
     my(@fc, $record, $keyw, $value);
 
@@ -169,6 +170,7 @@ sub decode_cfg {
         $value =~ s/^\s+//;
         $value =~ s/\n$//;
         $value =~ s/#(.+)$//;
+        $keyw =~ s/\s+$//;
 
         # Get locations of software, files etc
         $locationsref->{libradtran} = $value if ($keyw =~ m/libradtran/);
@@ -186,8 +188,8 @@ sub decode_cfg {
         $uvspeccfgref->{nstr} = $value if ($keyw =~ m/nstr/);
         $uvspeccfgref->{wavelength} = $value if ($keyw =~ m/wavelength/);
         $uvspeccfgref->{correlated_k} = $value if ($keyw =~ m/correlated_k/);
-        $uvspeccfgref->{output} = $value if ($keyw =~ m/output/);
-        $uvspeccfgref->{output_user} = $value if ($keyw =~ m/output_user/);
+        $uvspeccfgref->{output} = $value if ($keyw =~ m/output$/);
+        $uvspeccfgref->{output_user} = $value if ($keyw =~ m/output_user$/);
         $uvspeccfgref->{albedo} = $value if ($keyw =~ m/albedo/);
         $uvspeccfgref->{dens_column} = $value if ($keyw =~ m/dens_column/);
         $uvspeccfgref->{h2o_precip} = $value if ($keyw =~ m/h2o_precip/);

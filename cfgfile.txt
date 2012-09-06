@@ -1,11 +1,11 @@
 # Specify libRadtran version to use
-libradtran => /disk1/software/libRadtran-1.4
+libradtran => /disk1/software/libRadtran-1.6-beta
 # libRadtran applications that are used
-uvspec => /disk1/software/libRadtran-1.4/bin/uvspec
-zenith => /disk1/software/libRadtran-1.4/bin/zenith -q -t0
+uvspec => /disk1/software/libRadtran-1.6-beta/bin/uvspec
+zenith => /disk1/software/libRadtran-1.6-beta/bin/zenith -q -t0
 # Atmospheric composition and extraterrestric specturm
-atmosphere_file => /disk1/software/libRadtran-1.4/data/atmmod/afglms.dat
-solar_file => /disk1/software/libRadtran-1.4/data/solar_flux/atlas_plus_modtran
+atmosphere_file => /disk1/software/libRadtran-1.6-beta/data/atmmod/afglms.dat
+solar_file => /disk1/software/libRadtran-1.6-beta/data/solar_flux/atlas_plus_modtran
 # File to store results on
 outfile => libradtran_simulation-V2.txt
 # Temporary file to use during calculations
@@ -29,7 +29,7 @@ nstr=> 6 # Number of streams
 wavelength => 300.0 3000.0 # Wavelength range [nm]
 correlated_k => kato2
 output => sum
-#output_user => sza eglo
+output_user => sza eglo
 albedo => 0.05 # Surface albedo
 dens_column => O3 300 DU
 h2o_precip => 29.3
