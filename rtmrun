@@ -22,6 +22,10 @@
 # NOTES:
 # 1 Dobson Unit for Ozone is 0.001 atm-cm
 #
+# Currently Date::Manip is used for time handling. Timestep is handled in
+# the native form of Date::Manip. Other interfaces may be examined
+# later...
+#
 # BUGS:
 # NA
 #
@@ -32,12 +36,12 @@
 # NA
 #
 # CVS_ID:
-# $Id: rtmrun,v 1.3 2012-09-06 07:33:16 steingod Exp $
+# $Id: rtmrun,v 1.4 2012-09-06 09:26:22 steingod Exp $
 #
 
 use strict;
 use Cwd;
-use Date::Calc qw(Parse_Date Decode_Date_EU);
+#use Date::Calc qw(Parse_Date Decode_Date_EU);
 #use Date::Manip qw(ParseDate);
 use Date::Manip;
 use Getopt::Std;
@@ -47,7 +51,13 @@ use vars qw($opt_h $opt_c);
 sub usage;
 sub decode_cfg;
 
-my $verbose = 0;
+my $verbose = 1;
+my(%locations,%uvspeccfg);
+my($mydate);
+my($timecnt,$cfgcnt);
+my($myyear,$mymon,$mymday,$myhour,$mymin,$mydoy); 
+my($sza, $tmp, $key, $value, $cwd, $ssi);
+
 my $outfile = "libradtran_simulation.txt";
 my $tmpfile = "tmpfile.txt";
 my $errfile = "errfile.txt";
@@ -86,7 +96,6 @@ dens_column => "O3 300 DU",
 h2o_precip => "29.3",
 );
 
-my($mydate);
 
 usage if !getopts("hc:");
 usage if ($opt_h || !$opt_c);
@@ -94,7 +103,15 @@ my $cfgfile = $opt_c;
 
 # Decode configuration file
 die "Failed to decode configuration file...\n" 
-unless (decode_cfg(\%position, \%myperiod));
+unless (decode_cfg(\%locations,\%uvspeccfg,\%position,\%myperiod));
+
+print("zenith: $locations{zenith}\n");
+print("uvspec: $locations{uvspec}\n");
+print("atmosphere_file: $locations{atmosphere_file}\n");
+print("solar_file: $locations{solar_file}\n");
+print("outfile: $locations{outfile}\n");
+print("tmpfile: $locations{tmpfile}\n");
+print("errfile: $locations{errfile}\n");
 
 print("Latitude: $position{lat}\n");
 print("Longitude: $position{lon}\n");
@@ -106,44 +123,64 @@ print("timestep: $myperiod{step}\n");
 my $doy=0;
 my $mystartdate = ParseDate($myperiod{startdate});
 my $myenddate = ParseDate($myperiod{enddate});
-##my $year = UnixDate($mydate,"%Y");
-##my $month = UnixDate($mydate,"%m");
-##my $mday = UnixDate($mydate,"%d");
-##my $mydoy = UnixDate($mydate,"%j");
-##$doy = Date_DayOfYear($month,$mday,$year);
-##print(">> $mydate is $doy $mydoy\n");
-##print("$year-$month-$mday\n");
-
-#print("I dag: ".ParseDate("now")."\n");
 my $tz = Date_TimeZone;
 print("Timezone: $tz\n");
 
-#my $newdate = DateCalc($mydate,$myperiod{step});
-#print("$newdate\n");
-
-my($timecnt,$timedelta,$mydoy);
-my $epoch= UnixDate($mystartdate,"%s");
-my $epochend= UnixDate($myenddate,"%s");
-#$timedelta = (ParseDateDelta($myperiod{step}));
-#print("timedelta: $timedelta, $mystartdate, $myenddate\n");
-#print($mystartdate+$timedelta."\n");
-#print(">> ".ParseRecur($timedelta,$mystartdate,$mystartdate,$myenddate)."\n");
-#my @mydates = ParseRecur("0:0:0:0:1*0,15,30,45:0",$mystartdate,$mystartdate,$myenddate);
+# Generate date and time list to process
 my @mydates = ParseRecur($myperiod{step},$mystartdate,$mystartdate,$myenddate);
 
-foreach $mydate (@mydates) {
-    $mydoy = UnixDate($mydate,"%j");
-    print("$mydate is $mydoy\n");
-};
-
-exit; # while testing...
-
-my($myhour, $sza, $tmp, $key, $value, $cwd, $ssi);
-
-#$doy = Date_DayOfYear($mydate{'month'},$mydate{'mday'},$mydate{'year'});
-
+# Do the estimates...
 $cwd = getcwd();
 chdir "$srcdir"."/bin";
+open FP1, ">$cwd/$outfile" or die "Can't open $cwd/$outfile";
+foreach $mydate (@mydates) {
+    
+    # Do the time preparation
+    $mydoy = UnixDate($mydate,"%j");
+    $myyear = UnixDate($mydate,"%Y");
+    $mymon = UnixDate($mydate,"%m");
+    $mymday = UnixDate($mydate,"%d");
+    $myhour = UnixDate($mydate,"%H");
+    $mymin = UnixDate($mydate,"%M");
+    print("Now processing $mydate\n");
+    print("\t$myyear-$mymon-$mymday $myhour:$mymin $mydoy\n");
+    
+    # Estimate solar zenith angle
+    $tmp = qx/$locations{zenith} -a $position{'lat'} -o $position{'lon'} -y $myyear $mymday $mymon $myhour $mymin 0/;
+    $sza = (split / +/,$tmp)[1];
+    print("\t\t$sza\n");
+
+    # Create configuration file for uvspec
+    $cfgcnt = "";
+    $cfgcnt .= "atmosphere_file $locations{atmosphere_file}\n";
+    $cfgcnt .= "solar_file $locations{solar_file}\n";
+    while (($key, $value) = each %uvspeccfg) {
+        $cfgcnt .= "$key $value\n";
+    }
+    $cfgcnt .= "sza $sza\n";
+    $cfgcnt .= "day_of_year $mydoy\n";
+    $cfgcnt .= "quiet\n";
+
+    open FP2, ">$cwd/$tmpfile" or die "Can't open $cwd/$tmpfile\n";
+    print FP2 "$cfgcnt";
+    close FP2;
+
+    # Do the actual calculations and dump output after parsing
+    if ($verbose) {
+        $tmp = qx/$locations{uvspec} < $cwd\/$tmpfile/;
+    } else {
+        $tmp = qx/$locations{uvspec} < $cwd\/$tmpfile 2>$cwd\/$errfile/;
+        unlink "$tmpfile";
+    }
+    next unless defined($ssi = (split / +/,$tmp)[2]);
+
+    printf FP1 "%s %6.2f %6.2f\n",UnixDate($mydate,"%Y-%m-%dT%R %j"),$sza,$ssi;
+};
+close FP1;
+
+chdir $cwd;
+
+exit; # while testing...
 
 open FP1, ">$cwd/$outfile" or die "Can't open $cwd/$outfile";
 
@@ -189,6 +226,8 @@ sub usage {
 
 sub decode_cfg {
 
+    my $locationsref = shift @_;
+    my $uvspeccfgref = shift @_;
     my $posref = shift @_;
     my $periodref = shift @_;
 
@@ -205,10 +244,33 @@ sub decode_cfg {
         $value =~ s/^\s+//;
         $value =~ s/\n$//;
         $value =~ s/#(.+)$//;
-        #print("[$keyw] - [$value]\n");
+
+        # Get locations of software, files etc
+        $locationsref->{libRadtran} = $value if ($keyw =~ m/libRadtran/);
+        $locationsref->{zenith} = $value if ($keyw =~ m/zenith/);
+        $locationsref->{uvspec} = $value if ($keyw =~ m/uvspec/);
+        $locationsref->{atmosphere_file} = $value if ($keyw =~ m/atmosphere_file/);
+        $locationsref->{solar_file} = $value if ($keyw =~ m/solar_file/);
+        $locationsref->{outfile} = $value if ($keyw =~ m/outfile/);
+        $locationsref->{tmpfile} = $value if ($keyw =~ m/tmpfile/);
+        $locationsref->{errfile} = $value if ($keyw =~ m/errfile/);
+
+        # Get specifications for libRadtran model setup
+        $uvspeccfgref->{rte_solver} = $value if ($keyw =~ m/rte_solver/);
+        $uvspeccfgref->{deltam} = $value if ($keyw =~ m/deltam/);
+        $uvspeccfgref->{nstr} = $value if ($keyw =~ m/nstr/);
+        $uvspeccfgref->{wavelength} = $value if ($keyw =~ m/wavelength/);
+        $uvspeccfgref->{correlated_k} = $value if ($keyw =~ m/correlated_k/);
+        $uvspeccfgref->{output} = $value if ($keyw =~ m/output/);
+        $uvspeccfgref->{output_user} = $value if ($keyw =~ m/output_user/);
+        $uvspeccfgref->{albedo} = $value if ($keyw =~ m/albedo/);
+        $uvspeccfgref->{dens_column} = $value if ($keyw =~ m/dens_column/);
+        $uvspeccfgref->{h2o_precip} = $value if ($keyw =~ m/h2o_precip/);
+
         # Get location
         $posref->{lat} = $value if ($keyw =~ m/latitude/);
         $posref->{lon} = $value if ($keyw =~ m/longitude/);
+        
         # Get period specification
         $periodref->{startdate} = $value if ($keyw =~ m/startdate/);
         $periodref->{enddate} = $value if ($keyw =~ m/enddate/);
