@@ -22,6 +22,8 @@
 # NOTES:
 # 1 Dobson Unit for Ozone is 0.001 atm-cm
 #
+# Precipitable water in kg/m2 is about 1 mm
+#
 # Currently Date::Manip is used for time handling. Timestep is handled in
 # the native form of Date::Manip. Other interfaces may be examined
 # later...
@@ -36,7 +38,7 @@
 # NA
 #
 # CVS_ID:
-# $Id: rtmrun,v 1.7 2012-09-06 15:18:30 steingod Exp $
+# $Id: rtmrun,v 1.8 2012-09-06 19:56:20 steingod Exp $
 #
 
 use strict;
@@ -51,7 +53,7 @@ use vars qw($opt_h $opt_c);
 sub usage;
 sub decode_cfg;
 
-my $verbose = 1;
+my $verbose = 0;
 my(%locations,%uvspeccfg,%position,%myperiod);
 my($mydate);
 my($timecnt,$cfgcnt);
