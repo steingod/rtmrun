@@ -36,7 +36,7 @@
 # NA
 #
 # CVS_ID:
-# $Id: rtmrun,v 1.5 2012-09-06 09:27:49 steingod Exp $
+# $Id: rtmrun,v 1.6 2012-09-06 09:39:37 steingod Exp $
 #
 
 use strict;
@@ -51,51 +51,12 @@ use vars qw($opt_h $opt_c);
 sub usage;
 sub decode_cfg;
 
-my $verbose = 1;
-my(%locations,%uvspeccfg);
+my $verbose = 0;
+my(%locations,%uvspeccfg,%position,%myperiod);
 my($mydate);
 my($timecnt,$cfgcnt);
 my($myyear,$mymon,$mymday,$myhour,$mymin,$mydoy); 
 my($sza, $tmp, $key, $value, $cwd, $ssi);
-
-my $outfile = "libradtran_simulation.txt";
-my $tmpfile = "tmpfile.txt";
-my $errfile = "errfile.txt";
-my $srcdir = "/disk1/software/libRadtran-1.4";
-my $uvspec="$srcdir"."/bin/uvspec";
-my $zenith="$srcdir"."/bin/zenith -q -t0";
-my %position = (
-    lat => 60.4,
-    lon => -5.32, # positive westwards for libRadtran
-);
-my %myperiod = (
-    startdate => '', # ISO8601
-    enddate => '', # ISO8601
-    step => 0, # minutes
-);
-my %mydate = (
-    year => 2011,
-    month => 5,
-    mday => 13,
-    shour => 0,
-    ehour => 23,
-    step => 1,
-);
-my %cfg = (
-atmosphere_file => "$srcdir/data/atmmod/afglms.dat", # Location of atmospheric profile file. 
-solar_file => "$srcdir/data/solar_flux/atlas_plus_modtran", # Location of the extraterrestrial spectrum
-albedo => 0.05, # Surface albedo
-rte_solver => "disort", # Radiative transfer equation solver
-deltam => "on", # delta-M scaling on
-nstr=> 6, # Number of streams
-wavelength => "300.0 3000.0", # Wavelength range [nm]
-correlated_k => "kato2",
-output => "sum",
-output_user => "sza eglo",
-dens_column => "O3 300 DU",
-h2o_precip => "29.3",
-);
-
 
 usage if !getopts("hc:");
 usage if ($opt_h || !$opt_c);
@@ -131,8 +92,8 @@ my @mydates = ParseRecur($myperiod{step},$mystartdate,$mystartdate,$myenddate);
 
 # Do the estimates...
 $cwd = getcwd();
-chdir "$srcdir"."/bin";
-open FP1, ">$cwd/$outfile" or die "Can't open $cwd/$outfile";
+chdir "$locations{libradtran}"."/bin";
+open FP1, ">$cwd/$locations{outfile}" or die "Can't open $cwd/$locations{outfile}";
 foreach $mydate (@mydates) {
     
     # Do the time preparation
@@ -142,13 +103,10 @@ foreach $mydate (@mydates) {
     $mymday = UnixDate($mydate,"%d");
     $myhour = UnixDate($mydate,"%H");
     $mymin = UnixDate($mydate,"%M");
-    print("Now processing $mydate\n");
-    print("\t$myyear-$mymon-$mymday $myhour:$mymin $mydoy\n");
     
     # Estimate solar zenith angle
     $tmp = qx/$locations{zenith} -a $position{'lat'} -o $position{'lon'} -y $myyear $mymday $mymon $myhour $mymin 0/;
     $sza = (split / +/,$tmp)[1];
-    print("\t\t$sza\n");
 
     # Create configuration file for uvspec
     $cfgcnt = "";
@@ -161,16 +119,16 @@ foreach $mydate (@mydates) {
     $cfgcnt .= "day_of_year $mydoy\n";
     $cfgcnt .= "quiet\n";
 
-    open FP2, ">$cwd/$tmpfile" or die "Can't open $cwd/$tmpfile\n";
+    open FP2, ">$cwd/$locations{tmpfile}" or die "Can't open $cwd/$locations{tmpfile}\n";
     print FP2 "$cfgcnt";
     close FP2;
 
     # Do the actual calculations and dump output after parsing
     if ($verbose) {
-        $tmp = qx/$locations{uvspec} < $cwd\/$tmpfile/;
+        $tmp = qx/$locations{uvspec} < $cwd\/$locations{tmpfile}/;
     } else {
-        $tmp = qx/$locations{uvspec} < $cwd\/$tmpfile 2>$cwd\/$errfile/;
-        unlink "$tmpfile";
+        $tmp = qx/$locations{uvspec} < $cwd\/$locations{tmpfile} 2>$cwd\/$locations{errfile}/;
+        unlink "$locations{tmpfile}";
     }
     next unless defined($ssi = (split / +/,$tmp)[2]);
 
@@ -213,7 +171,7 @@ sub decode_cfg {
         $value =~ s/#(.+)$//;
 
         # Get locations of software, files etc
-        $locationsref->{libRadtran} = $value if ($keyw =~ m/libRadtran/);
+        $locationsref->{libradtran} = $value if ($keyw =~ m/libradtran/);
         $locationsref->{zenith} = $value if ($keyw =~ m/zenith/);
         $locationsref->{uvspec} = $value if ($keyw =~ m/uvspec/);
         $locationsref->{atmosphere_file} = $value if ($keyw =~ m/atmosphere_file/);
