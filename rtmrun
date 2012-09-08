@@ -38,7 +38,7 @@
 # NA
 #
 # CVS_ID:
-# $Id: rtmrun,v 1.8 2012-09-06 19:56:20 steingod Exp $
+# $Id: rtmrun,v 1.9 2012-09-08 09:59:46 steingod Exp $
 #
 
 use strict;
@@ -130,7 +130,7 @@ foreach $mydate (@mydates) {
         $tmp = qx/$locations{uvspec} < $cwd\/$locations{tmpfile}/;
     } else {
         $tmp = qx/$locations{uvspec} < $cwd\/$locations{tmpfile} 2>$cwd\/$locations{errfile}/;
-        unlink "$locations{tmpfile}";
+        unlink "$cwd/$locations{tmpfile}";
     }
     next unless defined($ssi = (split / +/,$tmp)[2]);
 
