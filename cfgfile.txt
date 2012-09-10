@@ -14,11 +14,11 @@ tmpfile => tmpfile.txt
 errfile => errfile.txt
 
 # Specify position
-latitude => 56.5
-longitude => -3.2 # positive westwards for libRadtran
+latitude => 76.50
+longitude => -25.07 # positive westwards for libRadtran
 # Specify time period
-startdate => 2012-04-21T00:00:00
-enddate => 2012-04-21T23:59:59
+startdate => 2012-06-21T00:00:00
+enddate => 2012-06-21T23:59:59
 # Specify timestep/recursion using Date::Manip style
 timestep => 0:0:0:0:1*0,15,30,45:0
 
@@ -30,6 +30,6 @@ wavelength => 300.0 3000.0 # Wavelength range [nm]
 correlated_k => kato2
 output => sum
 output_user => sza eglo
-albedo => 0.05 # Surface albedo
-dens_column => O3 300 DU
-h2o_precip => 29.3
+albedo => 0.20 # Surface albedo
+dens_column => O3 250 DU
+h2o_precip => 00.3
