@@ -35,10 +35,11 @@
 # Øystein Godøy, METNO/FOU, 16.11.2010 
 #
 # MODIFIED:
-# NA
+# Øystein Godøy, METNO/FOU, 2012-09-17: Added verbose option and support
+# for cdisort_pseudospherical configuration.
 #
 # CVS_ID:
-# $Id: rtmrun,v 1.9 2012-09-08 09:59:46 steingod Exp $
+# $Id: rtmrun,v 1.10 2012-09-17 19:28:55 steingod Exp $
 #
 
 use strict;
@@ -47,8 +48,9 @@ use Cwd;
 #use Date::Manip qw(ParseDate);
 use Date::Manip;
 use Getopt::Std;
+use DateTime::Format::HTTP qw(parse_datetime);
 
-use vars qw($opt_h $opt_c);
+use vars qw($opt_h $opt_c $opt_v);
 
 sub usage;
 sub decode_cfg;
@@ -60,9 +62,10 @@ my($timecnt,$cfgcnt);
 my($myyear,$mymon,$mymday,$myhour,$mymin,$mydoy); 
 my($sza, $tmp, $key, $value, $cwd, $ssi);
 
-usage if !getopts("hc:");
+usage if !getopts("hc:v");
 usage if ($opt_h || !$opt_c);
 my $cfgfile = $opt_c;
+$verbose = 1 if ($opt_v);
 
 # Decode configuration file
 die "Failed to decode configuration file...\n" unless (decode_cfg(\%locations,\%uvspeccfg,\%position,\%myperiod));
@@ -81,6 +84,14 @@ print("Longitude: $position{lon}\n");
 print("startdate: $myperiod{startdate}\n");
 print("enddate: $myperiod{enddate}\n");
 print("timestep: $myperiod{step}\n");
+
+#my $class = 'DateTime::Format::HTTP';
+#my $time = $class->parse_datetime($myperiod{startdate});
+#my $time = parse_datetime($myperiod{startdate});
+#print(">>> $time\n");
+#print(">>> ".$time->year()."\n");
+
+#exit; # while testing datetime....
 
 my $mystartdate = ParseDate($myperiod{startdate});
 my $myenddate = ParseDate($myperiod{enddate});
@@ -114,7 +125,11 @@ foreach $mydate (@mydates) {
     $cfgcnt .= "atmosphere_file $locations{atmosphere_file}\n";
     $cfgcnt .= "solar_file $locations{solar_file}\n";
     while (($key, $value) = each %uvspeccfg) {
-        $cfgcnt .= "$key $value\n";
+        if ($value eq "NOVALUE") {
+            $cfgcnt .= "$key\n";
+        } else {
+            $cfgcnt .= "$key $value\n";
+        }
         #print("$key - $value\n");
     }
     $cfgcnt .= "sza $sza\n";
@@ -145,9 +160,10 @@ exit;
 ###########################################################
 
 sub usage {
-    print("$0 [-h] -c <file>\n");
+    print("$0 [-hv] -c <file>\n");
     print("\t-h: print this\n");
     print("\t-c: configuration file\n");
+    print("\t-v: verbose and leave temporary files\n");
     exit;
 }
 
@@ -195,6 +211,7 @@ sub decode_cfg {
         $uvspeccfgref->{albedo} = $value if ($keyw =~ m/albedo/);
         $uvspeccfgref->{dens_column} = $value if ($keyw =~ m/dens_column/);
         $uvspeccfgref->{h2o_precip} = $value if ($keyw =~ m/h2o_precip/);
+        $uvspeccfgref->{cdisort_pseudospherical} = $value if ($keyw =~ m/cdisort_pseudospherical/);
 
         # Get location
         $posref->{lat} = $value if ($keyw =~ m/latitude/);
@@ -204,6 +221,8 @@ sub decode_cfg {
         $periodref->{startdate} = $value if ($keyw =~ m/startdate/);
         $periodref->{enddate} = $value if ($keyw =~ m/enddate/);
         $periodref->{step} = $value if ($keyw =~ m/timestep/);
+
+        print("$keyw - [$value]\n");
     }
 
     return(1);
