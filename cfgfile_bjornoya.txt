@@ -7,18 +7,18 @@ zenith => /disk1/software/libRadtran-1.6-beta/bin/zenith -q -t0
 atmosphere_file => /disk1/software/libRadtran-1.6-beta/data/atmmod/afglss.dat
 solar_file => /disk1/software/libRadtran-1.6-beta/data/solar_flux/atlas_plus_modtran
 # File to store results on
-outfile => libradtran_simulation_hopen_207.txt
+outfile => libradtran_simulation_bjornoya.txt
 # Temporary file to use during calculations
 tmpfile => tmpfile.txt
 # File to store error messages in
 errfile => errfile.txt
 
 # Specify position
-latitude => 76.51
-longitude => -25.01 # positive westwards for libRadtran
+latitude => 74.52
+longitude => -19.00 # positive westwards for libRadtran
 # Specify time period
-startdate => 2012-07-26T00:00:00
-enddate => 2012-07-26T23:59:59
+startdate => 2012-04-23T00:00:00
+enddate => 2012-04-23T23:59:59
 # Specify timestep/recursion using Date::Manip style
 timestep => 0:0:0:0:1*0,15,30,45:0
 
