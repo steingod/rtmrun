@@ -1,0 +1,12 @@
+########################################################### 
+rtmrun
+###########################################################
+
+Øystein Godøy, METNO/FOU, 2013-11-25 
+
+PURPOSE
+A Perl wrapper around libRadtran (version of choice) that simplifies
+configuration and operation of libRadtran when doing experiments.
+
+LICENSE
+Check LICENSE file.
