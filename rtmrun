@@ -46,9 +46,12 @@ use strict;
 use Cwd;
 #use Date::Calc qw(Parse_Date Decode_Date_EU);
 #use Date::Manip qw(ParseDate);
-use Date::Manip;
+#use Date::Manip;
 use Getopt::Std;
-use DateTime::Format::HTTP qw(parse_datetime);
+#use DateTime::Format::HTTP qw(parse_datetime);
+use DateTime;
+use DateTime::Format::DateParse;
+use DateTime::Duration;
 
 use vars qw($opt_h $opt_c $opt_v);
 
@@ -60,7 +63,7 @@ my(%locations,%uvspeccfg,%position,%myperiod);
 my($mydate);
 my($timecnt,$cfgcnt);
 my($myyear,$mymon,$mymday,$myhour,$mymin,$mydoy); 
-my($sza, $tmp, $key, $value, $cwd, $ssi);
+my($sza, $tmp, $key, $value, $cwd, $irrad);
 
 usage if !getopts("hc:v");
 usage if ($opt_h || !$opt_c);
@@ -70,51 +73,46 @@ $verbose = 1 if ($opt_v);
 # Decode configuration file
 die "Failed to decode configuration file...\n" unless (decode_cfg(\%locations,\%uvspeccfg,\%position,\%myperiod));
 
-print("zenith: $locations{zenith}\n");
-print("uvspec: $locations{uvspec}\n");
-print("atmosphere_file: $locations{atmosphere_file}\n");
-print("solar_file: $locations{solar_file}\n");
-print("outfile: $locations{outfile}\n");
-print("tmpfile: $locations{tmpfile}\n");
-print("errfile: $locations{errfile}\n");
+print("zenith: $locations{zenith}\n") if ($verbose);
+print("uvspec: $locations{uvspec}\n") if ($verbose);
+print("atmosphere_file: $locations{atmosphere_file}\n") if ($verbose);
+print("solar_file: $locations{solar_file}\n") if ($verbose);
+print("outfile: $locations{outfile}\n") if ($verbose);
+print("tmpfile: $locations{tmpfile}\n") if ($verbose);
+print("errfile: $locations{errfile}\n") if ($verbose);
 
-print("Latitude: $position{lat}\n");
-print("Longitude: $position{lon}\n");
+print("Latitude: $position{lat}\n") if ($verbose);
+print("Longitude: $position{lon}\n") if ($verbose);
 
-print("startdate: $myperiod{startdate}\n");
-print("enddate: $myperiod{enddate}\n");
-print("timestep: $myperiod{step}\n");
+print("startdate: $myperiod{startdate}\n") if ($verbose);
+print("enddate: $myperiod{enddate}\n") if ($verbose);
+print("timestep: $myperiod{step}\n") if ($verbose);
 
-#my $class = 'DateTime::Format::HTTP';
-#my $time = $class->parse_datetime($myperiod{startdate});
-#my $time = parse_datetime($myperiod{startdate});
-#print(">>> $time\n");
-#print(">>> ".$time->year()."\n");
-
-#exit; # while testing datetime....
-
-my $mystartdate = ParseDate($myperiod{startdate});
-my $myenddate = ParseDate($myperiod{enddate});
-my $tz = Date_TimeZone;
-print("Timezone: $tz\n");
-
-# Generate date and time list to process
-my @mydates = ParseRecur($myperiod{step},$mystartdate,$mystartdate,$myenddate);
+my $mystartdate = DateTime::Format::DateParse->parse_datetime(
+    $myperiod{startdate},
+    "GMT"
+);
+my $myenddate = DateTime::Format::DateParse->parse_datetime(
+    $myperiod{enddate},
+    "GMT"
+);
+my $duration = DateTime::Duration->new(
+    minutes => $myperiod{step},
+);
 
 # Do the estimates...
 $cwd = getcwd();
 print "$locations{libradtran}\n";
 chdir "$locations{libradtran}"."/bin" or die "Could not change directory";
 open FP1, ">$cwd/$locations{outfile}" or die "Can't open $cwd/$locations{outfile}";
-foreach $mydate (@mydates) {
-    
+for ($mydate=$mystartdate;$mydate<=$myenddate;$mydate->add_duration($duration)) {
     # Do the time preparation
-    $mydoy = UnixDate($mydate,"%j");
-    $myyear = UnixDate($mydate,"%Y");
-    $mymon = UnixDate($mydate,"%m");
-    $mymday = UnixDate($mydate,"%d");
-    $myhour = UnixDate($mydate,"%H");
-    $mymin = UnixDate($mydate,"%M");
+    $mydoy = $mydate->day_of_year();
+    $myyear = $mydate->year();
+    $mymon = $mydate->month();
+    $mymday = $mydate->day();
+    $myhour = $mydate->hour();
+    $mymin = $mydate->minute();
     
     # Estimate solar zenith angle
     $tmp = qx/$locations{zenith} -a $position{'lat'} -o $position{'lon'} -y $myyear $mymday $mymon $myhour $mymin 0/;
@@ -147,9 +145,9 @@ foreach $mydate (@mydates) {
         $tmp = qx/$locations{uvspec} < $cwd\/$locations{tmpfile} 2>$cwd\/$locations{errfile}/;
         unlink "$cwd/$locations{tmpfile}";
     }
-    next unless defined($ssi = (split / +/,$tmp)[2]);
+    next unless defined($irrad = (split / +/,$tmp)[2]);
 
-    printf FP1 "%s %6.2f %6.2f\n",UnixDate($mydate,"%Y-%m-%dT%R %j"),$sza,$ssi;
+    printf FP1 "%s %6.2f %6.2f\n",$mydate,$sza,$irrad;
 };
 close FP1;
 
@@ -196,6 +194,7 @@ sub decode_cfg {
         $locationsref->{uvspec} = $value if ($keyw =~ m/uvspec/);
         $locationsref->{atmosphere_file} = $value if ($keyw =~ m/atmosphere_file/);
         $locationsref->{solar_file} = $value if ($keyw =~ m/solar_file/);
+        $locationsref->{filter_function_file} = $value if ($keyw =~ m/filter_function_file/);
         $locationsref->{outfile} = $value if ($keyw =~ m/outfile/);
         $locationsref->{tmpfile} = $value if ($keyw =~ m/tmpfile/);
         $locationsref->{errfile} = $value if ($keyw =~ m/errfile/);
@@ -204,7 +203,8 @@ sub decode_cfg {
         $uvspeccfgref->{rte_solver} = $value if ($keyw =~ m/rte_solver/);
         $uvspeccfgref->{deltam} = $value if ($keyw =~ m/deltam/);
         $uvspeccfgref->{nstr} = $value if ($keyw =~ m/nstr/);
-        $uvspeccfgref->{wavelength} = $value if ($keyw =~ m/wavelength/);
+        $uvspeccfgref->{wavelength} = $value if ($keyw =~ m/wavelength /);
+        $uvspeccfgref->{wavelength_index} = $value if ($keyw =~ m/wavelength_index/);
         $uvspeccfgref->{correlated_k} = $value if ($keyw =~ m/correlated_k/);
         $uvspeccfgref->{output} = $value if ($keyw =~ m/output$/);
         $uvspeccfgref->{output_user} = $value if ($keyw =~ m/output_user$/);
@@ -212,6 +212,8 @@ sub decode_cfg {
         $uvspeccfgref->{dens_column} = $value if ($keyw =~ m/dens_column/);
         $uvspeccfgref->{h2o_precip} = $value if ($keyw =~ m/h2o_precip/);
         $uvspeccfgref->{cdisort_pseudospherical} = $value if ($keyw =~ m/cdisort_pseudospherical/);
+        $uvspeccfgref->{no_rayleigh} = $value if ($keyw =~ m/no_rayleigh/);
+        $uvspeccfgref->{zout} = $value if ($keyw =~ m/zout/);
 
         # Get location
         $posref->{lat} = $value if ($keyw =~ m/latitude/);
@@ -222,7 +224,7 @@ sub decode_cfg {
         $periodref->{enddate} = $value if ($keyw =~ m/enddate/);
         $periodref->{step} = $value if ($keyw =~ m/timestep/);
 
-        print("$keyw - [$value]\n");
+        #print("$keyw - [$value]\n");
     }
 
     return(1);
