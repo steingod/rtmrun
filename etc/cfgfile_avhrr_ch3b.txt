@@ -32,6 +32,7 @@ correlated_k => AVHRR_KRATZ
 wavelength_index => 10 14
 no_rayleigh => NOVALUE
 output => sum
+brightness => NOVALUE
 albedo => 0.0 # Surface albedo
 source => thermal
 zout => 0.0 120.0 # Output levels (within atmosphere file)
