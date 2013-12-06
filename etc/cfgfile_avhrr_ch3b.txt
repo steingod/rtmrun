@@ -6,7 +6,7 @@ zenith => /disk1/software/libRadtran-1.7/bin/zenith -q -t0
 # Atmospheric composition and extraterrestric spectrum
 atmosphere_file => /disk1/software/libRadtran-1.7/data/atmmod/afglsw.dat
 solar_file => /disk1/software/libRadtran-1.7/data/solar_flux/atlas_plus_modtran
-filter_function_file => /disk1/software/libRadtran-1.7/data/correlated_k/kratz/filter.ch1
+filter_function_file => /disk1/software/libRadtran-1.7/data/correlated_k/kratz/filter.ch3
 # File to store results on
 outfile => libradtran_simulation_test.txt
 # Temporary file to use during calculations
@@ -29,10 +29,11 @@ rte_solver => cdisort # Radiative transfer equation solver
 #nstr=> 6 # Number of streams
 #wavelength => 300.0 3000.0 # Wavelength range [nm]
 correlated_k => AVHRR_KRATZ
-wavelength_index => 1 5
+wavelength_index => 10 14
 no_rayleigh => NOVALUE
 output => sum
-albedo => 0.20 # Surface albedo
+albedo => 0.0 # Surface albedo
+source => thermal
 zout => 0.0 120.0 # Output levels (within atmosphere file)
 #dens_column => O3 250 DU
 #h2o_precip => 5.
