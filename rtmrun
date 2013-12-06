@@ -214,6 +214,8 @@ sub decode_cfg {
         $uvspeccfgref->{cdisort_pseudospherical} = $value if ($keyw =~ m/cdisort_pseudospherical/);
         $uvspeccfgref->{no_rayleigh} = $value if ($keyw =~ m/no_rayleigh/);
         $uvspeccfgref->{zout} = $value if ($keyw =~ m/zout/);
+        $uvspeccfgref->{source} = $value if ($keyw =~ m/source/);
+        $uvspeccfgref->{brightness} = $value if ($keyw =~ m/brightness/);
 
         # Get location
         $posref->{lat} = $value if ($keyw =~ m/latitude/);
