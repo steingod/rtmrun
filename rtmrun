@@ -145,9 +145,14 @@ for ($mydate=$mystartdate;$mydate<=$myenddate;$mydate->add_duration($duration)) 
         $tmp = qx/$locations{uvspec} < $cwd\/$locations{tmpfile} 2>$cwd\/$locations{errfile}/;
         unlink "$cwd/$locations{tmpfile}";
     }
-    next unless defined($irrad = (split / +/,$tmp)[2]);
-
-    printf FP1 "%s %6.2f %6.2f\n",$mydate,$sza,$irrad;
+    print "[$tmp]\n" if $verbose;
+    if ($uvspeccfg{output_user} eq "lambda sza uu") {
+        next unless defined($irrad = (split / +/,$tmp)[3]);
+        printf FP1 "%s %6.2f %6.2f\n",$mydate,$sza,$irrad;
+    } else {
+        next unless defined($irrad = (split / +/,$tmp)[2]);
+        printf FP1 "%s %6.2f %6.2f\n",$mydate,$sza,$irrad;
+    }
 };
 close FP1;
 
@@ -216,6 +221,10 @@ sub decode_cfg {
         $uvspeccfgref->{zout} = $value if ($keyw =~ m/zout/);
         $uvspeccfgref->{source} = $value if ($keyw =~ m/source/);
         $uvspeccfgref->{brightness} = $value if ($keyw =~ m/brightness/);
+        $uvspeccfgref->{reflectivity} = $value if ($keyw =~ m/reflectivity/);
+        $uvspeccfgref->{umu} = $value if ($keyw =~ m/umu/);
+        $uvspeccfgref->{phi0} = $value if ($keyw =~ m/phi0/);
+        $uvspeccfgref->{phi} = $value if ($keyw =~ m/phi/);
 
         # Get location
         $posref->{lat} = $value if ($keyw =~ m/latitude/);
