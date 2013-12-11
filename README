@@ -6,7 +6,10 @@ rtmrun
 
 PURPOSE
 A Perl wrapper around libRadtran (version of choice) that simplifies
-configuration and operation of libRadtran when doing experiments.
+configuration and operation of libRadtran when doing experiments. It can
+be used to perform simulations for a specific location and time period and
+supports aggregation of output in files suitable for further processing in
+e.g. Matlab, R or similar.
 
 LICENSE
 Check LICENSE file.
