@@ -148,7 +148,7 @@ for ($mydate=$mystartdate;$mydate<=$myenddate;$mydate->add_duration($duration)) 
     print "[$tmp]\n" if $verbose;
     if ($uvspeccfg{output_user} eq "lambda sza uu") {
         next unless defined($irrad = (split / +/,$tmp)[3]);
-        printf FP1 "%s %6.2f %6.2f\n",$mydate,$sza,$irrad;
+        printf FP1 "%s %6.2f %7.5f\n",$mydate,$sza,$irrad;
     } else {
         next unless defined($irrad = (split / +/,$tmp)[2]);
         printf FP1 "%s %6.2f %6.2f\n",$mydate,$sza,$irrad;
@@ -213,7 +213,9 @@ sub decode_cfg {
         $uvspeccfgref->{correlated_k} = $value if ($keyw =~ m/correlated_k/);
         $uvspeccfgref->{output} = $value if ($keyw =~ m/output$/);
         $uvspeccfgref->{output_user} = $value if ($keyw =~ m/output_user$/);
-        $uvspeccfgref->{albedo} = $value if ($keyw =~ m/albedo/);
+        $uvspeccfgref->{albedo_library} = $value if ($keyw =~ m/albedo_library/);
+        $uvspeccfgref->{albedo} = $value if ($keyw =~ m/albedo$/);
+        $uvspeccfgref->{surface_type} = $value if ($keyw =~ m/surface_type/);
         $uvspeccfgref->{dens_column} = $value if ($keyw =~ m/dens_column/);
         $uvspeccfgref->{h2o_precip} = $value if ($keyw =~ m/h2o_precip/);
         $uvspeccfgref->{cdisort_pseudospherical} = $value if ($keyw =~ m/cdisort_pseudospherical/);
