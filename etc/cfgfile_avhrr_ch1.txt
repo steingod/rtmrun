@@ -8,7 +8,7 @@ atmosphere_file => /disk1/software/libRadtran-1.7/data/atmmod/afglsw.dat
 solar_file => /disk1/software/libRadtran-1.7/data/solar_flux/atlas_plus_modtran
 filter_function_file => /disk1/software/libRadtran-1.7/data/correlated_k/kratz/filter.ch1
 # File to store results on
-outfile => libradtran_simulation_test.txt
+outfile => libradtran_simulation_avhrr_ch1.txt
 # Temporary file to use during calculations
 tmpfile => tmpfile.txt
 # File to store error messages in
@@ -18,10 +18,13 @@ errfile => errfile.txt
 latitude => 80.0
 longitude => 0.0 # positive westwards for libRadtran
 # Specify time period
-startdate => 2013-04-01T00:00:00
-enddate => 2013-04-02T00:00:00
+startdate => 2013-04-15T00:00:00
+enddate => 2013-04-30T00:00:00
 # Specify timestep/recursion in minutes
 timestep => 60
+umu => 0.94 # Cosine of view zenith
+phi0 => 180. # Solar azimuth
+phi => 180. # View azimuth
 
 # Specify model setup
 rte_solver => cdisort # Radiative transfer equation solver
@@ -32,8 +35,12 @@ correlated_k => AVHRR_KRATZ
 wavelength_index => 1 5
 no_rayleigh => NOVALUE
 output => sum
-albedo => 0.20 # Surface albedo
-zout => 0.0 120.0 # Output levels (within atmosphere file)
+output_user => lambda sza uu
+#albedo => 0.85 # Surface albedo
+albedo_library => IGBP
+surface_type => 1 # 19 fresh snow, 17 ocean water
+zout => TOA # Output levels (within atmosphere file)
 #dens_column => O3 250 DU
 #h2o_precip => 5.
 cdisort_pseudospherical => NOVALUE
+reflectivity => NOVALUE
